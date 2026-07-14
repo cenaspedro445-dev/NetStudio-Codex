@@ -1,1 +1,1 @@
-"""NetStudio Codex Backend"""
+"""Backend package."""

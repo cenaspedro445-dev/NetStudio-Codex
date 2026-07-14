@@ -1,14 +1,12 @@
 """Main application."""
 
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
-from sqlalchemy.orm import Session
 import logging
-import json
 
-from database import init_db, get_db
+from database import init_db
 from services.ollama import OllamaService
 from schemas import GenerateRequest, HealthResponse
 from config import get_settings
@@ -24,7 +22,6 @@ async def lifespan(app: FastAPI):
     logger.info("🚀 Starting NetStudio Codex Backend")
     init_db()
     
-    # Check Ollama on startup
     ollama_health = await OllamaService.check_health()
     if ollama_health:
         logger.info("✅ Ollama connected")
@@ -43,7 +40,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

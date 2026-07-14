@@ -43,7 +43,6 @@ class OllamaService:
         """Auto-detect best available model."""
         models = await OllamaService.list_models()
         
-        # Priority: qwen3 > qwen2.5-coder > first available
         priorities = ["qwen3", "qwen2.5-coder", "qwen2.5-coder-32b", "qwen2.5-coder-7b"]
         
         for priority in priorities:
@@ -69,11 +68,7 @@ class OllamaService:
                 async with client.stream(
                     "POST",
                     f"{OLLAMA_HOST}/api/generate",
-                    json={
-                        "model": model,
-                        "prompt": prompt,
-                        "stream": True
-                    },
+                    json={"model": model, "prompt": prompt, "stream": True},
                     timeout=OLLAMA_TIMEOUT
                 ) as resp:
                     if resp.status_code != 200:

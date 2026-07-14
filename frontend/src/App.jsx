@@ -20,14 +20,9 @@ function App() {
       setStatus('connected')
       setOllamaAvailable(data.ollama_available)
       setModels(data.models_available || [])
-      
-      if (!data.ollama_available) {
-        console.warn('⚠️ Ollama not available')
-      }
     } catch (error) {
       setStatus('disconnected')
       setOllamaAvailable(false)
-      console.error('Backend connection failed:', error)
     }
   }
 

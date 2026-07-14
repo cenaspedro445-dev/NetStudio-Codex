@@ -28,22 +28,14 @@ header h1 {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 20px;
   font-weight: 500;
-  transition: all 0.3s ease;
 }
 
 .status.connected {
   background: rgba(76, 175, 80, 0.3);
-  color: #e8f5e9;
 }
 
 .status.disconnected {
   background: rgba(244, 67, 54, 0.3);
-  color: #ffebee;
-}
-
-.status.connecting {
-  background: rgba(255, 152, 0, 0.3);
-  color: #fff3e0;
 }
 
 main {

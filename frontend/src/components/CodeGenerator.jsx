@@ -25,29 +25,23 @@ function CodeGenerator({ models, ollamaAvailable }) {
     setError('')
 
     try {
-      const response = await axios.post(
+      const res = await axios.post(
         'http://localhost:8000/generate',
-        {
-          prompt: prompt,
-          model: selectedModel
-        },
-        {
-          responseType: 'stream'
-        }
+        { prompt, model: selectedModel },
+        { responseType: 'stream' }
       )
 
       let fullResponse = ''
-      response.data.on('data', (chunk) => {
-        const text = chunk.toString()
-        fullResponse += text
+      res.data.on('data', (chunk) => {
+        fullResponse += chunk.toString()
         setResponse(fullResponse)
       })
 
-      response.data.on('end', () => {
+      res.data.on('end', () => {
         setLoading(false)
       })
 
-      response.data.on('error', (err) => {
+      res.data.on('error', (err) => {
         setError(`Error: ${err.message}`)
         setLoading(false)
       })
