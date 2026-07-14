@@ -3,6 +3,7 @@
 import httpx
 import os
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -79,4 +80,5 @@ class OllamaService:
                             yield line
         except Exception as e:
             logger.error(f"Generation failed: {e}")
-            yield '{"error": "' + str(e) + '"}'
+            error_json = json.dumps({"error": str(e)})
+            yield error_json
