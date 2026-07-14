@@ -59,12 +59,13 @@ FRONTEND_PID=$!
 cd ..
 
 echo ""
-echo "========================================"
+echo "======================================="
 echo "Services Started!"
-echo "========================================"
+echo "======================================="
 echo ""
 echo "Backend:  http://localhost:8000"
 echo "Frontend: http://localhost:5173"
+echo "API Docs: http://localhost:8000/docs"
 echo ""
 echo "Opening browser..."
 

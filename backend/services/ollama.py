@@ -79,4 +79,4 @@ class OllamaService:
                             yield line
         except Exception as e:
             logger.error(f"Generation failed: {e}")
-            yield f'{{"error": "{str(e)}}"'
+            yield '{"error": "' + str(e) + '"}'
