@@ -11,7 +11,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     networks:
-      - netstudio-network
+      - netstudio
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
       interval: 30s
@@ -21,7 +21,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: docker/Dockerfile.backend
+      dockerfile: Dockerfile.backend
     container_name: netstudio-backend
     ports:
       - "8000:8000"
@@ -34,37 +34,35 @@ services:
       - DATABASE_URL=sqlite:///./data/app.db
       - LOG_LEVEL=INFO
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
       - ./data:/app/data
     depends_on:
       ollama:
         condition: service_healthy
     networks:
-      - netstudio-network
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+      - netstudio
+    command: python -m uvicorn backend.main:app --host 0.0.0.0 --port 8000
 
   frontend:
     build:
       context: .
-      dockerfile: docker/Dockerfile.frontend
+      dockerfile: Dockerfile.frontend
     container_name: netstudio-frontend
     ports:
       - "5173:5173"
     environment:
-      - VITE_API_URL=http://backend:8000
-      - VITE_API_BASE=/api
+      - VITE_API_URL=http://localhost:8000
     depends_on:
       - backend
     networks:
-      - netstudio-network
+      - netstudio
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: npm run dev
 
 volumes:
   ollama_data:
 
 networks:
-  netstudio-network:
+  netstudio:
     driver: bridge
