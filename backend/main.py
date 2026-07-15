@@ -1,15 +1,18 @@
 """Main application."""
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from contextlib import asynccontextmanager
+from sqlalchemy.orm import Session
 import logging
+import os
 
-from database import init_db
+from database import init_db, get_db
 from services.ollama import OllamaService
-from schemas import GenerateRequest, HealthResponse
+from schemas import GenerateRequest, HealthResponse, TaskResponse
 from config import get_settings
+from database import Task
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -40,12 +43,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+# CORS Configuration
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type"],
 )
 
 @app.get("/")
@@ -75,17 +80,37 @@ async def list_models():
         raise HTTPException(status_code=503, detail=str(e))
 
 @app.post("/generate")
-async def generate(request: GenerateRequest):
-    """Generate code with streaming."""
+async def generate(request: GenerateRequest, db: Session = Depends(get_db)):
+    """Generate code with streaming and persistence."""
+    if not request.model:
+        request.model = await OllamaService.detect_default_model()
+    
+    task = Task(prompt=request.prompt, model=request.model, response="")
+    db.add(task)
+    db.flush()
+    task_id = task.id
+    
     try:
         async def stream_generate():
+            full_response = ""
             async for chunk in OllamaService.generate(request.prompt, request.model):
+                full_response += chunk
                 yield chunk + "\n"
+            
+            task.response = full_response
+            db.commit()
         
         return StreamingResponse(stream_generate(), media_type="text/event-stream")
     except Exception as e:
+        db.rollback()
         logger.error(f"Generation error: {e}")
         raise HTTPException(status_code=503, detail=str(e))
+
+@app.get("/tasks")
+async def get_tasks(db: Session = Depends(get_db)):
+    """List all saved tasks."""
+    tasks = db.query(Task).all()
+    return [{"id": t.id, "prompt": t.prompt, "response": t.response, "model": t.model, "created_at": t.created_at.isoformat()} for t in tasks]
 
 if __name__ == "__main__":
     import uvicorn

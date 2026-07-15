@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import axios from 'axios'
 import '../styles/CodeGenerator.css'
 
 function CodeGenerator({ models, ollamaAvailable }) {
@@ -25,28 +24,41 @@ function CodeGenerator({ models, ollamaAvailable }) {
     setError('')
 
     try {
-      const res = await axios.post(
-        'http://localhost:8000/generate',
-        { prompt, model: selectedModel },
-        { responseType: 'stream' }
-      )
+      const response = await fetch('http://localhost:8000/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt, model: selectedModel }),
+      })
 
+      if (!response.ok) {
+        const error = await response.json()
+        setError(`Error: ${error.detail || response.statusText}`)
+        setLoading(false)
+        return
+      }
+
+      const reader = response.body.getReader()
+      const decoder = new TextDecoder()
       let fullResponse = ''
-      res.data.on('data', (chunk) => {
-        fullResponse += chunk.toString()
-        setResponse(fullResponse)
-      })
 
-      res.data.on('end', () => {
-        setLoading(false)
-      })
+      try {
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
 
-      res.data.on('error', (err) => {
-        setError(`Error: ${err.message}`)
-        setLoading(false)
-      })
+          const chunk = decoder.decode(value, { stream: true })
+          fullResponse += chunk
+          setResponse(fullResponse)
+        }
+      } finally {
+        reader.cancel()
+      }
+
+      setLoading(false)
     } catch (error) {
-      setError(`Error: ${error.response?.data?.detail || error.message}`)
+      setError(`Error: ${error.message}`)
       setLoading(false)
     }
   }
@@ -74,6 +86,7 @@ function CodeGenerator({ models, ollamaAvailable }) {
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Enter your code prompt here...\n\nExample: Write a function to reverse a string in Python"
           disabled={loading || !ollamaAvailable}
+          maxLength={10000}
           className="prompt-input"
         />
         
